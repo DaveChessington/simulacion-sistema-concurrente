@@ -286,6 +286,22 @@ def actualizar_producto(id_producto: int, cantidad: int, movimiento: str):
 """
 
 if __name__=="__main__":
+    #use alembic for migrations 
+    
+    #initialize migrations
+    #alembic init alembic
+    
+    #save current state of db   
+    #alembic stamp head
+
+    #create a migration
+    #alembic revision --autogenerate -m "nombre_de_la_migracion"
+
+    #update database
+    #alembic upgrade head
+
+
+    Base.metadata.drop_all(engine)  # drop existing tables to recreate with correct schema
     Base.metadata.create_all(engine) #create tables
 
     def poblar_bd():
