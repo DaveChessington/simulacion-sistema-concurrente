@@ -26,15 +26,17 @@ class Producto(Base):
 
     def __str__(self):
         return f"Producto(id_producto={self.id_producto}, \
-        nombre='{self.nombre},categoria='{self.categoria}',\
+        nombre='{self.nombre}',categoria='{self.categoria}',\
         descripcion='{self.descripcion}',cantidad={self.cantidad}')"
 
     #used to recreate the object and for debugging purposes
     def __repr__(self):
         return self.__str__()
     
-    def __eq__(self, value):
-        return self.id_producto==value.id_producto
+    def __eq__(self, other):
+        if not isinstance(other, Producto):
+            return False
+        return self.id_producto == other.id_producto
 
 class Productor(Base):
     __tablename__ = "productores"
@@ -57,7 +59,7 @@ class Entrada(Base):
     id_producto: Mapped[int] = mapped_column(ForeignKey("productos.id_producto"))
     id_productor: Mapped[int] = mapped_column(ForeignKey("productores.id_productor"))  
     cantidad: Mapped[int] = mapped_column(Integer)
-    fecha: Mapped[str] = mapped_column(Date)
+    fecha: Mapped[date] = mapped_column(Date)
     precio_compra: Mapped[float] = mapped_column(Float)
     precio_venta: Mapped[float] = mapped_column(Float)
 
@@ -67,7 +69,7 @@ class Entrada(Base):
     def __str__(self):
         return f"Entrada(id_entrada={self.id_entrada},id_producto='{self.id_producto}',\
         id_productor={self.id_productor},cantidad={self.cantidad},fecha={self.fecha},\
-        precio_compra={self.precio_compra},precio_venta={self.precio_compra})"
+        precio_compra={self.precio_compra},precio_venta={self.precio_venta})"
 
     #used to recreate the object 
     def __repr__(self):
@@ -106,9 +108,9 @@ class Entrega(Base):
     id_entrega: Mapped[int] = mapped_column(primary_key=True)
     
     id_comprador: Mapped[int] = mapped_column(ForeignKey("compradores.id_comprador"))
-    id_repartidor: Mapped[int] = mapped_column(ForeignKey("repartidores.id_repartidor"))
+    id_repartidor: Mapped[int | None] = mapped_column(ForeignKey("repartidores.id_repartidor"),nullable=True)
     
-    fecha: Mapped[str] = mapped_column(String(20))
+    fecha: Mapped[date] = mapped_column(Date)
     entregado: Mapped[bool] = mapped_column(Boolean)
 
     comprador = relationship("Comprador")
@@ -137,7 +139,7 @@ class DetalleEntrega(Base):
     entrega = relationship("Entrega", back_populates="detalles")
  
     def __str__(self):
-        return f"Productor(id={self.id_detalle_entrega}, id_entrega='{self.id_entrega}',\
+        return f"DetalleEntrega(id={self.id_detalle_entrega}, id_entrega='{self.id_entrega}',\
         id_producto={self.id_producto},cantidad={self.cantidad})"
 
     #used to recreate the object 
@@ -179,6 +181,8 @@ def crear_producto(nombre:str,categoria:str,descripcion:str,cantidad:int=0):
 def crear_entrada(id_producto,id_productor,cantidad,fecha, precio_compra,precio_venta):
     with Session(engine,expire_on_commit=False) as session:
         producto=session.get(Producto,id_producto)
+        if not producto:
+            raise ValueError("Producto no encontrado")
         nuevo=Entrada(id_producto=id_producto,id_productor=id_productor,cantidad=cantidad,fecha=fecha,precio_compra=precio_compra,precio_venta=precio_venta)
         session.add(nuevo)
 
@@ -187,45 +191,60 @@ def crear_entrada(id_producto,id_productor,cantidad,fecha, precio_compra,precio_
         session.commit()
         return nuevo  
 
-def crear_entrega(id_comprador:int,id_repartidor:int,fecha,detalle:dict[int:int],entregado:bool=False):
+def crear_entrega(id_comprador:int,fecha,detalle:dict[int:int],entregado:bool=False):
     with Session(engine,expire_on_commit=False) as session:
-        repartidor=session.get(Repartidor,id_repartidor)
-        if not repartidor.disponible:
-            raise Exception("Repartidor no disponible")
-        nuevo=Entrega(id_comprador=id_comprador,id_repartidor=id_repartidor,fecha=fecha,entregado=entregado)
+        nuevo=Entrega(id_comprador=id_comprador,fecha=fecha,entregado=entregado)
         session.add(nuevo)
         session.flush() #send data to the db to execute queries before commiting it
         id_entrega=nuevo.id_entrega
         try:
             for id_producto,cantidad in detalle.items():
-                detalle_entrada=DetalleEntrega(id_entrega=id_entrega,id_producto=id_producto,cantidad=cantidad)
-                session.add(detalle_entrada)
-                #actualizar_producto(nuevo.id_entrada,k,v) 
-                
                 prod=session.get(Producto, id_producto)
+
                 if not prod:
                     raise ValueError("Producto no encontrado")
                 
                 if prod.cantidad<cantidad:
                     raise ValueError("Stock insuficiente")
+                
+                detalle_entrada=DetalleEntrega(id_entrega=id_entrega,id_producto=id_producto,cantidad=cantidad)
+                session.add(detalle_entrada)
+                #actualizar_producto(nuevo.id_entrada,k,v) 
+        
                 prod.cantidad-=cantidad
 
         except Exception as e:
             session.rollback() #to revvert changes 
             print(f"Error: {e}")
             return False
-        repartidor.disponible=False
         session.commit()
         return nuevo
-    
+
+def asignar_repartidor(id_entrega:int,id_repartidor:int):
+    with Session(engine,expire_on_commit=False) as session:
+        entrega=session.get(Entrega,id_entrega)
+        if not entrega:
+            raise ValueError("Entrega no encontrada")
+        repartidor=session.get(Repartidor,id_repartidor)
+        if not repartidor.disponible:
+            raise Exception("Repartidor no disponible")
+        repartidor.disponible=False
+        
+        entrega.id_repartidor=id_repartidor
+        session.commit()
+
 def actualizar_entrega(id_entrega:int):
     with Session(engine,expire_on_commit=False) as session:
         entrega:Entrega=session.get(Entrega,id_entrega)
-        repartidor:Repartidor=session.get(Repartidor,entrega.id_repartidor)
-        if entrega:
-            entrega.entregado=True
-            repartidor.disponible=True
-            session.commit()
+        if not entrega:
+            return
+
+        if entrega.id_repartidor and not entrega.entregado:
+            repartidor:Repartidor=session.get(Repartidor, entrega.id_repartidor)
+            if repartidor:
+                repartidor.disponible=True
+                entrega.entregado=True
+                session.commit()
 
 def buscar(model:type[Base],id:int):
     with Session(engine,expire_on_commit=False) as session:
@@ -236,6 +255,8 @@ def listar(model:type[Base],filter=None,value=None):
     with Session(engine,expire_on_commit=False) as session:
         query=session.query(model)
         if filter:
+            if not hasattr(model, filter):
+                raise ValueError(f"{filter} no es un atributo válido de {model}")
             attribute=getattr(model, filter) #get attribute from class
             query=query.filter(attribute==value)
         return query.all()
@@ -268,55 +289,89 @@ if __name__=="__main__":
     Base.metadata.create_all(engine) #create tables
 
     def poblar_bd():
-        try:
-            productores = [crear_productor(f"Productor {i+1}") for i in range(10)]
-            productos = [
-                crear_producto(
-                    nombre=f"Producto {i+1}",
-                    categoria=random.choice(["Electrónica", "Ropa", "Alimentos"]),
-                    descripcion=f"Descripción del producto {i+1}",
-                    cantidad=0
-                )
-                for i in range(20)
-            ]
-            compradores = [crear_comprador(f"Comprador {i+1}") for i in range(10)]
-            repartidores = [crear_repartidor(f"Repartidor {i+1}", True) for i in range(5)]
-            for _ in range(30):
-                producto = random.choice(productos)
-                productor = random.choice(productores)
 
-                cantidad = random.randint(10, 50)
+        print("Poblando base de datos...")
 
-                crear_entrada(
-                    id_producto=producto.id_producto,
-                    id_productor=productor.id_productor,
-                    cantidad=cantidad,
-                    fecha=date.today(),
-                    precio_compra=random.uniform(10, 50),
-                    precio_venta=random.uniform(60, 100)
-                )
+        # -------------------------
+        # PRODUCTORES
+        # -------------------------
+        productores_nombres = [
+            "AgroMex", "Campo Verde", "Distribuidora León",
+            "Frutas del Bajío", "Granja San Miguel"
+        ]
 
-            for _ in range(20):
-                comprador = random.choice(compradores)
-                repartidor = random.choice(repartidores)
-                detalle = {}
-                for _ in range(random.randint(1, 3)):
-                    producto = random.choice(productos)
-                    cantidad = random.randint(1, 5)
-                    detalle[producto.id_producto] = cantidad
-                try:
-                    crear_entrega(
-                        id_comprador=comprador.id_comprador,
-                        id_repartidor=repartidor.id_repartidor,
-                        fecha=str(date.today()),
-                        detalle=detalle
-                    )
-                except Exception as ex:
-                    print(ex)
+        productores = []
+        for nombre in productores_nombres:
+            p = crear_productor(nombre)
+            productores.append(p)
 
-            print("Base de datos poblada")
+        # -------------------------
+        # PRODUCTOS
+        # -------------------------
+        productos_data = [
+            ("Manzana", "Fruta", "Manzana roja fresca"),
+            ("Plátano", "Fruta", "Plátano orgánico"),
+            ("Zanahoria", "Verdura", "Zanahoria grande"),
+            ("Lechuga", "Verdura", "Lechuga romana"),
+            ("Tomate", "Verdura", "Tomate saladet"),
+            ("Naranja", "Fruta", "Naranja dulce"),
+        ]
 
-        except Exception as e:
-            print(f"Error: {e}")
-    
+        productos = []
+        for nombre, categoria, descripcion in productos_data:
+            prod = crear_producto(
+                nombre=nombre,
+                categoria=categoria,
+                descripcion=descripcion,
+                cantidad=0  # inicia en 0, se llena con entradas
+            )
+            productos.append(prod)
+
+        # -------------------------
+        # REPARTIDORES
+        # -------------------------
+        repartidores_nombres = [
+            "Pedro", "Luis", "Andrea", "Sofía", "Miguel"
+        ]
+
+        repartidores = []
+        for nombre in repartidores_nombres:
+            r = crear_repartidor(nombre, disponible=True)
+            repartidores.append(r)
+
+        # -------------------------
+        # COMPRADORES
+        # -------------------------
+        compradores_nombres = [
+            "Juan Pérez", "María López", "Carlos Ramírez",
+            "Ana Torres", "Luis Fernández"
+        ]
+
+        compradores = []
+        for nombre in compradores_nombres:
+            c = crear_comprador(nombre)
+            compradores.append(c)
+
+        # -------------------------
+        # GENERAR ENTRADAS (stock inicial)
+        # -------------------------
+        for _ in range(15):
+            producto = random.choice(productos)
+            productor = random.choice(productores)
+
+            cantidad = random.randint(5, 25)
+            precio_compra = round(random.uniform(10, 50), 2)
+            precio_venta = round(precio_compra * random.uniform(1.2, 1.6), 2)
+
+            crear_entrada(
+                id_producto=producto.id_producto,
+                id_productor=productor.id_productor,
+                cantidad=cantidad,
+                fecha=date.today(),
+                precio_compra=precio_compra,
+                precio_venta=precio_venta
+            )
+
+        print("Base de datos poblada correctamente ✅")
+
     poblar_bd()
