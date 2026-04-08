@@ -261,6 +261,18 @@ def listar(model:type[Base],filter=None,value=None):
             query=query.filter(attribute==value)
         return query.all()
 
+def get_page(elements,page:int=1,per_page:int=10):
+    total=len(elements)
+    total_pages=(total+per_page-1)//per_page
+    if 1>page>total_pages:
+        print("pagina no valida")
+        page=1
+    if per_page<1:
+        print("no de elementos por pagina no validos")
+        page=20
+    start=(page-1)*per_page
+    end=start+per_page
+    return {"data":elements[start:end],"page":page,"per_page":per_page,"total":total,"total_pages":total_pages}
 
 """
 def actualizar_producto(id_producto: int, cantidad: int, movimiento: str):
