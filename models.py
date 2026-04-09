@@ -3,8 +3,17 @@ from sqlalchemy import create_engine,String, Integer, Boolean, ForeignKey, Date,
 import random
 from datetime import date
 
-# The connection string format is 'dialect+driver://user:password@host/database'
-engine=create_engine("sqlite:///requests.db")
+import os
+
+#Get the directory where this script is located
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+#Build the absolute path to your database
+db_path = os.path.join(BASE_DIR, "requests.db")
+
+#The connection string format is 'dialect+driver://user:password@host/database'
+engine = create_engine(f"sqlite:///{db_path}")
+
 
 # activate foreign keys to validate fields
 @event.listens_for(engine,"connect")
@@ -14,7 +23,12 @@ def enable_foreign_keys(dbapi_connection, connection_record):
     cursor.close()
 
 class Base(DeclarativeBase):
-    pass
+    @classmethod
+    def attributes(self): #method defined to show attributes
+        return [c.key for c in self.__table__.columns]
+
+Base.metadata.create_all(engine)
+
 class Producto(Base):
     __tablename__ ="productos"
     
@@ -23,6 +37,7 @@ class Producto(Base):
     categoria: Mapped[str] = mapped_column(String(50))
     descripcion: Mapped[str] = mapped_column(String(150))
     cantidad: Mapped[int] = mapped_column(Integer)
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
 
     def __str__(self):
         return f"Producto(id_producto={self.id_producto}, \
@@ -37,12 +52,13 @@ class Producto(Base):
         if not isinstance(other, Producto):
             return False
         return self.id_producto == other.id_producto
-
+    
 class Productor(Base):
     __tablename__ = "productores"
     
     id_productor: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(50))
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
 
     def __str__(self):
         return f"Productor(id_productor={self.id_productor}, nombre='{self.nombre}')"
@@ -51,13 +67,12 @@ class Productor(Base):
     def __repr__(self):
         return self.__str__()
 
-
 class Entrada(Base):
     __tablename__ = "entradas"
     
     id_entrada: Mapped[int] = mapped_column(primary_key=True)
-    id_producto: Mapped[int] = mapped_column(ForeignKey("productos.id_producto"))
-    id_productor: Mapped[int] = mapped_column(ForeignKey("productores.id_productor"))  
+    id_producto: Mapped[int] = mapped_column(ForeignKey("productos.id_producto",ondelete="CASCADE"))
+    id_productor: Mapped[int] = mapped_column(ForeignKey("productores.id_productor",ondelete="CASCADE"))  
     cantidad: Mapped[int] = mapped_column(Integer)
     fecha: Mapped[date] = mapped_column(Date)
     precio_compra: Mapped[float] = mapped_column(Float)
@@ -94,6 +109,7 @@ class Repartidor(Base):
     id_repartidor: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(50))
     disponible: Mapped[bool] = mapped_column(Boolean)
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
 
     def __str__(self):
         return f"Repartidor(id_repartidor={self.id_repartidor}, nombre='{self.nombre}',disponible={self.disponible})"
@@ -107,8 +123,8 @@ class Entrega(Base):
     
     id_entrega: Mapped[int] = mapped_column(primary_key=True)
     
-    id_comprador: Mapped[int] = mapped_column(ForeignKey("compradores.id_comprador"))
-    id_repartidor: Mapped[int | None] = mapped_column(ForeignKey("repartidores.id_repartidor"),nullable=True)
+    id_comprador: Mapped[int] = mapped_column(ForeignKey("compradores.id_comprador",ondelete="CASCADE"))
+    id_repartidor: Mapped[int | None] = mapped_column(ForeignKey("repartidores.id_repartidor",ondelete="SET NULL"),nullable=True)
     
     fecha: Mapped[date] = mapped_column(Date)
     entregado: Mapped[bool] = mapped_column(Boolean)
@@ -131,8 +147,8 @@ class DetalleEntrega(Base):
     
     id_detalle_entrega: Mapped[int] = mapped_column(primary_key=True)
     
-    id_entrega: Mapped[int] = mapped_column(ForeignKey("entregas.id_entrega"))
-    id_producto: Mapped[int] = mapped_column(ForeignKey("productos.id_producto"))
+    id_entrega: Mapped[int] = mapped_column(ForeignKey("entregas.id_entrega", ondelete="CASCADE"))
+    id_producto: Mapped[int] = mapped_column(ForeignKey("productos.id_producto", ondelete="CASCADE"))
     cantidad: Mapped[int] = mapped_column(Integer)
 
     producto = relationship("Producto")  
@@ -273,6 +289,43 @@ def get_page(elements,page:int=1,per_page:int=10):
     start=(page-1)*per_page
     end=start+per_page
     return {"data":elements[start:end],"page":page,"per_page":per_page,"total":total,"total_pages":total_pages}
+
+def modify(model:type[Base],id:int,attr:str,value:any):
+    with Session(engine,expire_on_commit=False) as session:
+        obj=session.get(model, id)
+        if not obj:
+            raise ValueError(f"{model.__name__} con id {id} no existe")
+        if not hasattr(obj, attr):
+            raise ValueError(f"{model.__name__} no tiene el atributo {attr}")
+        column_type = type(getattr(obj, attr))
+        if not isinstance(value, column_type) and value is not None:
+            raise TypeError(f"Tipo inválido para {attr}")
+        try:
+            setattr(obj, attr, value)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+
+def soft_delete(model:type[Base],id:int):#Compradores,REpartidores, Productores
+    with Session(engine, expire_on_commit=False) as session:
+        obj=session.get(model, id)
+        if not obj:
+            raise ValueError(f"{model.__name__} con id {id} no existe")
+        if not hasattr(obj, "activo"):
+            raise ValueError(f"{model.__name__} no soporta soft delete")
+        obj.activo=False
+        session.commit()
+        return obj
+    
+def delete(model: type[Base],id:int):
+    with Session(engine, expire_on_commit=False) as session:
+        obj=session.get(model, id)
+        if not obj:
+            raise ValueError(f"{model.__name__} con id {id} no existe")
+        session.delete(obj)
+        session.commit()
+        return obj
 
 """
 def actualizar_producto(id_producto: int, cantidad: int, movimiento: str):
