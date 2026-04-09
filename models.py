@@ -27,7 +27,7 @@ class Base(DeclarativeBase):
     def attributes(self): #method defined to show attributes
         return [c.key for c in self.__table__.columns]
 
-Base.metadata.create_all(engine)
+#Base.metadata.create_all(engine)
 
 class Producto(Base):
     __tablename__ ="productos"
@@ -37,7 +37,7 @@ class Producto(Base):
     categoria: Mapped[str] = mapped_column(String(50))
     descripcion: Mapped[str] = mapped_column(String(150))
     cantidad: Mapped[int] = mapped_column(Integer)
-    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+    activo: Mapped[bool] = mapped_column(Boolean, default=True,server_default="1")
 
     def __str__(self):
         return f"Producto(id_producto={self.id_producto}, \
@@ -58,7 +58,7 @@ class Productor(Base):
     
     id_productor: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(50))
-    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+    activo: Mapped[bool] = mapped_column(Boolean, default=True,server_default="1")
 
     def __str__(self):
         return f"Productor(id_productor={self.id_productor}, nombre='{self.nombre}')"
@@ -95,6 +95,7 @@ class Comprador(Base):
     
     id_comprador: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(50))
+    activo: Mapped[bool] = mapped_column(Boolean, default=True,server_default="1")
 
     def __str__(self):
         return f"Comprador(id_comprador={self.id_comprador}, nombre='{self.nombre}')"
@@ -109,10 +110,10 @@ class Repartidor(Base):
     id_repartidor: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(50))
     disponible: Mapped[bool] = mapped_column(Boolean)
-    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+    activo: Mapped[bool] = mapped_column(Boolean, default=True,server_default="1")
 
     def __str__(self):
-        return f"Repartidor(id_repartidor={self.id_repartidor}, nombre='{self.nombre}',disponible={self.disponible})"
+        return f"Repartidor(id_repartidor={self.id_repartidor}, nombre='{self.nombre}',disponible={self.disponible},activo={self.activo})"
 
     #used to recreate the object 
     def __repr__(self):
@@ -350,6 +351,14 @@ def actualizar_producto(id_producto: int, cantidad: int, movimiento: str):
             return False
 """
 
+def clear_db():
+    with Session(engine) as session:
+        session.query(Producto).delete()
+        session.query(Productor).delete()
+        session.query(Repartidor).delete()
+        session.query(Comprador).delete()
+        session.commit()
+
 if __name__=="__main__":
     #use alembic for migrations 
     
@@ -365,94 +374,10 @@ if __name__=="__main__":
     #update database
     #alembic upgrade head
 
-
+    
+    """
     Base.metadata.drop_all(engine)  # drop existing tables to recreate with correct schema
     Base.metadata.create_all(engine) #create tables
+    """
 
-    def poblar_bd():
-
-        print("Poblando base de datos...")
-
-        # -------------------------
-        # PRODUCTORES
-        # -------------------------
-        productores_nombres = [
-            "AgroMex", "Campo Verde", "Distribuidora León",
-            "Frutas del Bajío", "Granja San Miguel"
-        ]
-
-        productores = []
-        for nombre in productores_nombres:
-            p = crear_productor(nombre)
-            productores.append(p)
-
-        # -------------------------
-        # PRODUCTOS
-        # -------------------------
-        productos_data = [
-            ("Manzana", "Fruta", "Manzana roja fresca"),
-            ("Plátano", "Fruta", "Plátano orgánico"),
-            ("Zanahoria", "Verdura", "Zanahoria grande"),
-            ("Lechuga", "Verdura", "Lechuga romana"),
-            ("Tomate", "Verdura", "Tomate saladet"),
-            ("Naranja", "Fruta", "Naranja dulce"),
-        ]
-
-        productos = []
-        for nombre, categoria, descripcion in productos_data:
-            prod = crear_producto(
-                nombre=nombre,
-                categoria=categoria,
-                descripcion=descripcion,
-                cantidad=0  # inicia en 0, se llena con entradas
-            )
-            productos.append(prod)
-
-        # -------------------------
-        # REPARTIDORES
-        # -------------------------
-        repartidores_nombres = [
-            "Pedro", "Luis", "Andrea", "Sofía", "Miguel"
-        ]
-
-        repartidores = []
-        for nombre in repartidores_nombres:
-            r = crear_repartidor(nombre, disponible=True)
-            repartidores.append(r)
-
-        # -------------------------
-        # COMPRADORES
-        # -------------------------
-        compradores_nombres = [
-            "Juan Pérez", "María López", "Carlos Ramírez",
-            "Ana Torres", "Luis Fernández"
-        ]
-
-        compradores = []
-        for nombre in compradores_nombres:
-            c = crear_comprador(nombre)
-            compradores.append(c)
-
-        # -------------------------
-        # GENERAR ENTRADAS (stock inicial)
-        # -------------------------
-        for _ in range(15):
-            producto = random.choice(productos)
-            productor = random.choice(productores)
-
-            cantidad = random.randint(5, 25)
-            precio_compra = round(random.uniform(10, 50), 2)
-            precio_venta = round(precio_compra * random.uniform(1.2, 1.6), 2)
-
-            crear_entrada(
-                id_producto=producto.id_producto,
-                id_productor=productor.id_productor,
-                cantidad=cantidad,
-                fecha=date.today(),
-                precio_compra=precio_compra,
-                precio_venta=precio_venta
-            )
-
-        print("Base de datos poblada correctamente ✅")
-
-    poblar_bd()
+    clear_db()
