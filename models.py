@@ -1,5 +1,5 @@
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session, relationship
-from sqlalchemy import create_engine,String, Integer, Boolean, ForeignKey, Date, Float, event
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session, relationship,selectinload
+from sqlalchemy import inspect,create_engine,String, Integer, Boolean, ForeignKey, Date, Float, event, select
 import random
 from datetime import date
 
@@ -12,7 +12,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 db_path = os.path.join(BASE_DIR, "requests.db")
 
 #The connection string format is 'dialect+driver://user:password@host/database'
-engine = create_engine(f"sqlite:///{db_path}")
+engine = create_engine(f"sqlite:///{db_path}",connect_args={"check_same_thread": False})
 
 
 # activate foreign keys to validate fields
@@ -26,6 +26,25 @@ class Base(DeclarativeBase):
     @classmethod
     def attributes(self): #method defined to show attributes
         return [c.key for c in self.__table__.columns]
+    
+    def to_dict(self):
+        data={c.key:getattr(self, c.key) for c in self.__table__.columns} 
+        
+        inspected = inspect(self)
+        for rel in inspected.mapper.relationships:
+            # Check if the relationship is already in memory
+            if rel.key in inspected.unloaded:
+                continue  # Skip if not loaded to avoid triggering the error
+                
+            value = getattr(self, rel.key)
+            if value is None:
+                data[rel.key] = None
+            elif isinstance(value, list):
+                data[rel.key] = [item.to_dict() if hasattr(item, 'to_dict') else str(item) for item in value]
+            else:
+                data[rel.key] = value.to_dict() if hasattr(value, 'to_dict') else str(value)
+                
+        return data
 
 #Base.metadata.create_all(engine)
 
@@ -229,13 +248,22 @@ def crear_entrega(id_comprador:int,fecha,detalle:dict[int:int],entregado:bool=Fa
                 #actualizar_producto(nuevo.id_entrada,k,v) 
         
                 prod.cantidad-=cantidad
+            session.commit()
+            
+            #load data from detalles before closing session
+            stmt=select(Entrega).options(selectinload(Entrega.detalles)).where(
+            Entrega.id_entrega==nuevo.id_entrega 
+            )
+
+            nuevo=session.execute(stmt).scalar_one()
+
+            return nuevo
 
         except Exception as e:
             session.rollback() #to revvert changes 
             print(f"Error: {e}")
-            return False
-        session.commit()
-        return nuevo
+            raise e
+        
 
 def asignar_repartidor(id_entrega:int,id_repartidor:int):
     with Session(engine,expire_on_commit=False) as session:
@@ -328,6 +356,21 @@ def delete(model: type[Base],id:int):
         session.commit()
         return obj
 
+
+def liberar_repartidor(id_repartidor:int):
+    with Session(engine,expire_on_commit=False) as session:
+        repartidor=session.get(Repartidor,id_repartidor)
+        if not repartidor:
+            raise ValueError("Repartidor no encontrado")
+        repartidor.disponible=True
+        session.commit()
+
+def liberar_todos():
+    with Session(engine,expire_on_commit=False) as session:
+        repartidores=session.query(Repartidor).filter_by(disponible=False).all()
+        for repartidor in repartidores:
+            repartidor.disponible=True
+        session.commit()
 """
 def actualizar_producto(id_producto: int, cantidad: int, movimiento: str):
     with Session(engine) as session:

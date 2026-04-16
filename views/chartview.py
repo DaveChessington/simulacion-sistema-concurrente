@@ -13,7 +13,7 @@ elements=[Person("Alice", "Smith", 30), Person("Bob", "Johnson", 25), Person("Ch
     Person("George", "Miller", 19), Person("Hannah", "Davis", 24), Person("Ian", "Rodriguez", 37),
     Person("Julia", "Martinez", 22),Person("David","Adame",20)]*11
 
-def chart_view(page: ft.Page,columns=columns,elements=elements):
+def chart_view(page: ft.Page,columns=columns,elements=elements,identifier_attr=None,actions=None):
     table = fdt.DataTable2(
         expand=True,
         empty=ft.Text("This table is empty."),
@@ -24,12 +24,26 @@ def chart_view(page: ft.Page,columns=columns,elements=elements):
         ],
         rows=[
             fdt.DataRow2(cells=[
-                ft.DataCell(ft.Text(getattr(element,attr))) for attr in columns.values()
+                ft.DataCell(ft.Text(getattr(element,attr))) for attr in columns
             ])
             for element in elements
         ]
     )
 
+    if actions:
+        table.columns.append(fdt.DataColumn2(label=ft.Text("Actions")))
+        for i, row in enumerate(table.rows):
+            identifier=getattr(elements[i], identifier_attr)
+
+            row.cells.append(
+                ft.DataCell(
+                    ft.Row(
+                        controls=actions(identifier), 
+                        alignment=ft.MainAxisAlignment.CENTER
+                    )
+                )
+            )    
+            
     content=ft.Column(ft.SafeArea(content=table,expand=True),expand=True)
 
     

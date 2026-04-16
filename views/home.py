@@ -29,7 +29,7 @@ def home(page:ft.Page):
                 content.content=dy.delivery_view(page)
                 topbar.title="Delivery Staff"
             case 5:
-                content.contet=r.restock_view(page)
+                content.content=r.restock_view(page)
                 topbar.title="Restock"
             case 6:
                 content.content=s.sales_view(page)

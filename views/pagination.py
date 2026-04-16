@@ -42,7 +42,14 @@ def pagination_view(page:ft.Page,generate=cardview.card_view,elements=[i for i i
         except Exception as ex:
             print(ex)
             pagination=m.get_page(elements)
-        content.content=generate(page,pagination["data"])
+        if not pagination["data"]:
+            content.content = ft.Container(
+                content=ft.Text("No data to display"),
+                alignment=ft.Alignment.CENTER,
+                expand=True
+            )
+        else:
+            content.content=generate(page,pagination["data"])
        
         page.update()
 
