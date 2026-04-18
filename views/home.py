@@ -7,6 +7,7 @@ import delivery as dy
 import restock as r
 import sales as s
 import simulation as sm
+import log_view as lv
 
 def home(page:ft.Page):  
     
@@ -34,6 +35,9 @@ def home(page:ft.Page):
             case 6:
                 content.content=s.sales_view(page)
                 topbar.title="Sales"
+            case 7:
+                content.content=lv.log_view(page)
+                topbar.title="System Logs"
         page.update()
 
     topbar=ft.AppBar(
@@ -61,6 +65,7 @@ def home(page:ft.Page):
             ft.NavigationRailDestination(icon=ft.Icon(ft.Icons.DELIVERY_DINING),label="Repartidores"),
             ft.NavigationRailDestination(icon=ft.Icon(ft.Icons.LOGIN),label="Entradas"),
             ft.NavigationRailDestination(icon=ft.Icon(ft.Icons.LOGOUT),label="Pedidos"),
+            ft.NavigationRailDestination(icon=ft.Icon(ft.Icons.LIST_ALT),label="Logs"),
         ],
         on_change=sidebar_controller
     )
