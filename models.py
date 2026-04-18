@@ -108,6 +108,45 @@ class Entrada(Base):
     #used to recreate the object 
     def __repr__(self):
         return self.__str__()
+    
+    @classmethod
+    def display_attributes(cls):
+        """Retorna los atributos a mostrar en formato amigable"""
+        return {
+            "ID": "id_entrada",
+            "Producto": "producto_nombre",
+            "Productor": "productor_nombre",
+            "Cantidad": "cantidad",
+            "Fecha": "fecha",
+            "Precio Compra": "precio_compra",
+            "Precio Venta": "precio_venta"
+        }
+    
+    def get_display_data(self):
+        """Retorna objeto con datos listos para mostrar"""
+        class DisplayData:
+            pass
+        
+        data = DisplayData()
+        data.id_entrada = self.id_entrada
+        
+        # Manejar producto con fallback seguro
+        try:
+            data.producto_nombre = self.producto.nombre if self.producto else f"ID: {self.id_producto}"
+        except:
+            data.producto_nombre = f"ID: {self.id_producto}"
+        
+        # Manejar productor con fallback seguro
+        try:
+            data.productor_nombre = self.productor.nombre if self.productor else f"ID: {self.id_productor}"
+        except:
+            data.productor_nombre = f"ID: {self.id_productor}"
+        
+        data.cantidad = self.cantidad
+        data.fecha = self.fecha
+        data.precio_compra = self.precio_compra
+        data.precio_venta = self.precio_venta
+        return data
 
 class Comprador(Base):
     __tablename__ = "compradores"
@@ -161,6 +200,41 @@ class Entrega(Base):
     #used to recreate the object 
     def __repr__(self):
         return self.__str__()
+    
+    @classmethod
+    def display_attributes(cls):
+        """Retorna los atributos a mostrar en formato amigable"""
+        return {
+            "ID": "id_entrega",
+            "Comprador": "comprador_nombre",
+            "Repartidor": "repartidor_nombre",
+            "Fecha": "fecha",
+            "Entregado": "entregado"
+        }
+    
+    def get_display_data(self):
+        """Retorna objeto con datos listos para mostrar"""
+        class DisplayData:
+            pass
+        
+        data = DisplayData()
+        data.id_entrega = self.id_entrega
+        
+        # Manejar comprador con fallback seguro
+        try:
+            data.comprador_nombre = self.comprador.nombre if self.comprador else f"ID: {self.id_comprador}"
+        except:
+            data.comprador_nombre = f"ID: {self.id_comprador}"
+        
+        # Manejar repartidor con fallback seguro
+        try:
+            data.repartidor_nombre = self.repartidor.nombre if self.repartidor else "No asignado"
+        except:
+            data.repartidor_nombre = "No asignado"
+        
+        data.fecha = self.fecha
+        data.entregado = "Sí" if self.entregado else "No"
+        return data
 
 class DetalleEntrega(Base):
     __tablename__ = "detalle_entrega"
@@ -297,14 +371,26 @@ def buscar(model:type[Base],id:int):
     
 # use type[Base] to specify you want the Class, not an instance of the class
 def listar(model:type[Base],filter=None,value=None):
+    """Lista elementos del modelo con relaciones cargadas eagerly"""
     with Session(engine,expire_on_commit=False) as session:
-        query=session.query(model)
+        stmt = select(model)
+        
+        # Cargar relaciones eagerly según el modelo
+        if model == Entrada:
+            stmt = stmt.options(selectinload(Entrada.producto), selectinload(Entrada.productor))
+        elif model == Entrega:
+            stmt = stmt.options(selectinload(Entrega.comprador), selectinload(Entrega.repartidor))
+        elif model == DetalleEntrega:
+            stmt = stmt.options(selectinload(DetalleEntrega.producto), selectinload(DetalleEntrega.entrega))
+        
         if filter:
             if not hasattr(model, filter):
                 raise ValueError(f"{filter} no es un atributo válido de {model}")
-            attribute=getattr(model, filter) #get attribute from class
-            query=query.filter(attribute==value)
-        return query.all()
+            attribute = getattr(model, filter)
+            stmt = stmt.where(attribute == value)
+        
+        result = session.execute(stmt).scalars().all()
+        return result
 
 def get_page(elements,page:int=1,per_page:int=10):
     total=len(elements)
