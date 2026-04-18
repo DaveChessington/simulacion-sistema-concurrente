@@ -15,7 +15,7 @@ def home(page:ft.Page):
         print("selected index:",e.control.selected_index)
         match e.control.selected_index:
             case 0:
-                content.content=d.dashboard_view(page)          
+                content.content=d.dashboard_view(page, )          
                 topbar.title="Dashboard"
             case 1:
                 content.content=p.products_view(page)

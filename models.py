@@ -457,6 +457,78 @@ def liberar_todos():
         for repartidor in repartidores:
             repartidor.disponible=True
         session.commit()
+
+# Stock Management Functions
+def get_stock_total():
+    """Retorna el stock total de todos los productos"""
+    with Session(engine, expire_on_commit=False) as session:
+        result = session.query(Producto).all()
+        return sum(p.cantidad for p in result)
+
+def get_stock_por_producto():
+    """Retorna lista de productos con su stock"""
+    with Session(engine, expire_on_commit=False) as session:
+        productos = session.query(Producto).filter(Producto.activo == True).all()
+        return [
+            {"id": p.id_producto, "nombre": p.nombre, "cantidad": p.cantidad, "categoria": p.categoria}
+            for p in productos
+        ]
+
+def get_productos_bajo_stock(minimo: int = 5):
+    """Retorna productos con stock por debajo del mínimo especificado"""
+    with Session(engine, expire_on_commit=False) as session:
+        productos = session.query(Producto).filter(
+            Producto.cantidad < minimo,
+            Producto.activo == True
+        ).all()
+        return [
+            {"id": p.id_producto, "nombre": p.nombre, "cantidad": p.cantidad, "minimo": minimo}
+            for p in productos
+        ]
+
+def get_productos_sin_stock():
+    """Retorna productos sin stock disponible"""
+    with Session(engine, expire_on_commit=False) as session:
+        productos = session.query(Producto).filter(
+            Producto.cantidad == 0,
+            Producto.activo == True
+        ).all()
+        return [
+            {"id": p.id_producto, "nombre": p.nombre}
+            for p in productos
+        ]
+
+def get_stock_por_categoria():
+    """Retorna stock agrupado por categoría"""
+    with Session(engine, expire_on_commit=False) as session:
+        productos = session.query(Producto).filter(Producto.activo == True).all()
+        stock_por_categoria = {}
+        for p in productos:
+            if p.categoria not in stock_por_categoria:
+                stock_por_categoria[p.categoria] = 0
+            stock_por_categoria[p.categoria] += p.cantidad
+        return stock_por_categoria
+
+def get_movimientos_stock_resumen():
+    """Retorna resumen de movimientos: entradas vs salidas"""
+    with Session(engine, expire_on_commit=False) as session:
+        entradas_total = 0
+        salidas_total = 0
+        
+        # Calcular entradas
+        entradas = session.query(Entrada).all()
+        entradas_total = sum(e.cantidad for e in entradas)
+        
+        # Calcular salidas
+        detalles = session.query(DetalleEntrega).all()
+        salidas_total = sum(d.cantidad for d in detalles)
+        
+        return {
+            "entradas": entradas_total,
+            "salidas": salidas_total,
+            "balance": entradas_total - salidas_total
+        }
+
 """
 def actualizar_producto(id_producto: int, cantidad: int, movimiento: str):
     with Session(engine) as session:

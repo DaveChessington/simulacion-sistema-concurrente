@@ -5,7 +5,7 @@ import simulate as sm
 
 def simulation_view(page:ft.Page):
     def cerrar_y_simular(e):
-        sm.simulation(True, True)
+        sm.simulation(run=True, daemon=True, limit=20)
         main_content.open = False
         page.snack_bar = aviso
         aviso.open = True

@@ -97,28 +97,44 @@ def restock(id=None):
 
 
 class Simulation:
-    def __init__(self, limit=20,daemon=False):
-        self.limit=limit
-        self.daemon=daemon
+    def __init__(self, limit: int | None = 20, daemon: bool = False):
+        self.limit = limit
+        self.daemon = daemon
+        self.threads: list[threading.Thread] = []
 
     def start(self):
         global_logger.create_message("info", f"Iniciando simulación del sistema (límite: {self.limit})")
-        i=1
-        if type(self.limit)==int:
-            condition=lambda: i<=self.limit
-        else:
-            condition=lambda: True
-        while condition():
-            time.sleep(random.randint(1,3))
-            restocking=threading.Thread(target=restock,args=(i,),daemon=self.daemon,name=f"entrada {i}")
-            purchase=threading.Thread(target=comprar,args=(i,),daemon=self.daemon,name=f"compra {i}")
-            delivery=threading.Thread(target=entregar,args=(i,),daemon=self.daemon,name=f"entrega {i}")
+        i = 1
+        while self.limit is None or i <= self.limit:
+            time.sleep(random.randint(1, 3))
+            restocking = threading.Thread(target=restock, args=(i,), daemon=self.daemon, name=f"entrada {i}")
+            purchase = threading.Thread(target=comprar, args=(i,), daemon=self.daemon, name=f"compra {i}")
+            delivery = threading.Thread(target=entregar, args=(i,), daemon=self.daemon, name=f"entrega {i}")
+
+            self.threads.extend([restocking, purchase, delivery])
             restocking.start()
             purchase.start()
             delivery.start()
-            i+=1
+            i += 1
+
+        if not self.daemon:
+            for thread in self.threads:
+                thread.join()
+
         global_logger.create_message("success", f"Simulación completada - {i-1} operaciones procesadas")
         print(f"procesos pendientes: {threading.enumerate()}")
+        return self
 
-if __name__=="__main__":
-    Simulation().start()
+    def stop(self):
+        global_logger.create_message("warning", "Solicitud de parada de simulación recibida")
+        self.limit = 0
+
+
+def simulation(run: bool = False, daemon: bool = True, limit: int | None = 20):
+    if not run:
+        return None
+    sim = Simulation(limit=limit, daemon=daemon)
+    return sim.start()
+
+if __name__ == "__main__":
+    simulation(run=True, daemon=False, limit=20)
