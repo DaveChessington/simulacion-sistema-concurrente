@@ -9,8 +9,8 @@ def restock_view(page:ft.Page):
     elementos_display = [elem.get_display_data() for elem in elementos_originales]
     
     main_content = p.pagination_view(page,
-        lambda page, elements: c.chart_view(page, m.Entrada.display_attributes(), elements), 
-        elementos_display)
+        lambda page, elements: c.chart_view(page, m.Entrada.display_attributes(), elements,), 
+        elementos_display, page_title="Entradas de Inventario")
 
     if __name__=="__main__":
         page.add(main_content)

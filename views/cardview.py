@@ -20,22 +20,29 @@ def content(element):
         ]
     )
 
-def card_view(page:ft.Page,elements=[i for i in range(120)],structure=content):
-    #structure is meant to the body of the card, you  should be able to pass a custom elemnt to display its values
-    #elements is supposed to be 
-    view= ft.GridView(
-                    expand=True,
-                    runs_count=2,
-                    spacing=8,
-                    child_aspect_ratio=3.5, 
-                    controls=[ft.Card(
-                            content=ft.Container(
-                                padding=10,
-                                content=structure(element)
-                            ),
-                        ) for element in elements
-                    ]   
-                )
+def card_view(page:ft.Page, elements=[i for i in range(120)], structure=content,
+              runs_count: int = 2, spacing: int = 8,
+              child_aspect_ratio: float = 2.4,
+              card_width: int = 360, card_height: int = 180):
+    # structure is meant to be the body of the card; you should be able to pass a custom element to display its values
+    view = ft.GridView(
+        expand=True,
+        runs_count=runs_count,
+        spacing=spacing,
+        child_aspect_ratio=child_aspect_ratio,
+        controls=[
+            ft.Card(
+                content=ft.Container(
+                    padding=12,
+                    width=card_width,
+                    height=card_height,
+                    content=structure(element)
+                ),
+                margin=ft.margin.only(bottom=8)
+            )
+            for element in elements
+        ]
+    )
     
     if __name__=="__main__":
         page.add(view)

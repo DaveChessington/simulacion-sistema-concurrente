@@ -60,7 +60,7 @@ def sales_view(page: ft.Page):
     main_content = p.pagination_view(page,
         lambda page, elements: c.chart_view(page, m.Entrega.display_attributes(), elements,
                                            identifier_attr="id_entrega", actions=details),
-        elementos_display)
+        elementos_display, page_title="Entregas Registradas")
 
     if __name__=="__main__":
         page.add(main_content)
