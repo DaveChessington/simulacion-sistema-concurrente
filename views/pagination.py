@@ -6,9 +6,10 @@ import flet as ft
 import models as m
 import cardview
 
-def pagination_view(page:ft.Page,generate=cardview.card_view,elements=[i for i in range(120)]):
+def pagination_view(page:ft.Page, generate=cardview.card_view, elements=[i for i in range(120)], page_title=None, add_button_callback=None):
     #elements must be a model from models.py
     #generate parameter must be a function to generate the content for pagination
+    #add_button_callback is a function to call when the add button is clicked
     
     def next_pressed(e):
         if int(current_page.value)+1>pagination["total_pages"]:
@@ -64,7 +65,24 @@ def pagination_view(page:ft.Page,generate=cardview.card_view,elements=[i for i i
     prev_button=ft.IconButton(icon=ft.Icons.NAVIGATE_BEFORE,on_click=prev_pressed)
     navigation=ft.Row([prev_button,current_page,next_button],alignment=ft.MainAxisAlignment.CENTER)
     
-    component=ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER,controls=[content,navigation],expand=True,scroll=ft.ScrollMode.AUTO,)
+    # Agregar botón de agregar nuevo si se proporciona callback
+    add_button = None
+    if add_button_callback:
+        add_button = ft.FloatingActionButton(
+            icon=ft.Icons.ADD,
+            on_click=add_button_callback
+        )
+    
+    component=ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER,controls=[
+        ft.Text(page_title or "Paginación", size=24, weight=ft.FontWeight.BOLD),
+        ft.Divider(),
+        content,
+        navigation
+    ],expand=True,scroll=ft.ScrollMode.AUTO,)
+
+    # Envolver en un Stack si hay botón flotante
+    if add_button:
+        page.floating_action_button = add_button
 
     update_pagination()
     

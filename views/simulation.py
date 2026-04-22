@@ -7,8 +7,7 @@ def simulation_view(page:ft.Page):
     def cerrar_y_simular(e):
         sm.simulation(run=True, daemon=True, limit=20)
         main_content.open = False
-        page.snack_bar = aviso
-        aviso.open = True
+        page.show_dialog(aviso)
         page.update()
         
     aviso=ft.SnackBar(

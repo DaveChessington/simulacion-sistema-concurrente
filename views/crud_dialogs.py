@@ -19,8 +19,7 @@ def create_producto_dialog(page: ft.Page, on_save_callback=None):
     def save_producto(e):
         try:
             if not nombre_input.value or not categoria_input.value:
-                page.snack_bar = ft.SnackBar(ft.Text("Nombre y categoría son requeridos"))
-                page.snack_bar.open = True
+                page.show_dialog(ft.SnackBar(ft.Text("Nombre y categoría son requeridos")))
                 page.update()
                 return
             
@@ -31,14 +30,12 @@ def create_producto_dialog(page: ft.Page, on_save_callback=None):
                 cantidad=int(cantidad_input.value or 0)
             )
             dialog.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"✓ Producto '{nombre_input.value}' creado"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            page.show_dialog(ft.SnackBar(ft.Text(f"✓ Producto '{nombre_input.value}' creado"), bgcolor=ft.Colors.GREEN))
             page.update()
             if on_save_callback:
                 on_save_callback()
         except Exception as ex:
-            page.snack_bar = ft.SnackBar(ft.Text(f"Error: {str(ex)}"), bgcolor=ft.Colors.RED)
-            page.snack_bar.open = True
+            page.show_dialog(ft.SnackBar(ft.Text(f"Error: {str(ex)}"), bgcolor=ft.Colors.RED))
             page.update()
 
     dialog = ft.AlertDialog(
@@ -64,21 +61,18 @@ def create_productor_dialog(page: ft.Page, on_save_callback=None):
     def save_productor(e):
         try:
             if not nombre_input.value:
-                page.snack_bar = ft.SnackBar(ft.Text("El nombre es requerido"))
-                page.snack_bar.open = True
+                page.show_dialog(ft.SnackBar(ft.Text("El nombre es requerido")))
                 page.update()
                 return
             
             nuevo = m.crear_productor(nombre=nombre_input.value)
             dialog.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"✓ Productor '{nombre_input.value}' creado"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            page.show_dialog(ft.SnackBar(ft.Text(f"✓ Productor '{nombre_input.value}' creado"), bgcolor=ft.Colors.GREEN))
             page.update()
             if on_save_callback:
                 on_save_callback()
         except Exception as ex:
-            page.snack_bar = ft.SnackBar(ft.Text(f"Error: {str(ex)}"), bgcolor=ft.Colors.RED)
-            page.snack_bar.open = True
+            page.show_dialog(ft.SnackBar(ft.Text(f"Error: {str(ex)}"), bgcolor=ft.Colors.RED))
             page.update()
 
     dialog = ft.AlertDialog(
@@ -99,21 +93,18 @@ def create_comprador_dialog(page: ft.Page, on_save_callback=None):
     def save_comprador(e):
         try:
             if not nombre_input.value:
-                page.snack_bar = ft.SnackBar(ft.Text("El nombre es requerido"))
-                page.snack_bar.open = True
+                page.show_dialog(ft.SnackBar(ft.Text("El nombre es requerido")))
                 page.update()
                 return
             
             nuevo = m.crear_comprador(nombre=nombre_input.value)
             dialog.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"✓ Comprador '{nombre_input.value}' creado"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            page.show_dialog(ft.SnackBar(ft.Text(f"Comprador '{nombre_input.value}' creado"), bgcolor=ft.Colors.GREEN))
             page.update()
             if on_save_callback:
                 on_save_callback()
         except Exception as ex:
-            page.snack_bar = ft.SnackBar(ft.Text(f"Error: {str(ex)}"), bgcolor=ft.Colors.RED)
-            page.snack_bar.open = True
+            page.show_dialog(ft.SnackBar(ft.Text(f"Error: {str(ex)}"), bgcolor=ft.Colors.RED))
             page.update()
 
     dialog = ft.AlertDialog(
@@ -135,21 +126,18 @@ def create_repartidor_dialog(page: ft.Page, on_save_callback=None):
     def save_repartidor(e):
         try:
             if not nombre_input.value:
-                page.snack_bar = ft.SnackBar(ft.Text("El nombre es requerido"))
-                page.snack_bar.open = True
+                page.show_dialog(ft.SnackBar(ft.Text("El nombre es requerido")))
                 page.update()
                 return
             
             nuevo = m.crear_repartidor(nombre=nombre_input.value, disponible=disponible_checkbox.value)
             dialog.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"✓ Repartidor '{nombre_input.value}' creado"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            page.show_dialog(ft.SnackBar(ft.Text(f"✓ Repartidor '{nombre_input.value}' creado"), bgcolor=ft.Colors.GREEN))
             page.update()
             if on_save_callback:
                 on_save_callback()
         except Exception as ex:
-            page.snack_bar = ft.SnackBar(ft.Text(f"Error: {str(ex)}"), bgcolor=ft.Colors.RED)
-            page.snack_bar.open = True
+            page.show_dialog(ft.SnackBar(ft.Text(f"Error: {str(ex)}"), bgcolor=ft.Colors.RED))
             page.update()
 
     dialog = ft.AlertDialog(
@@ -173,8 +161,7 @@ def create_edit_producto_dialog(page: ft.Page, producto: m.Producto, on_save_cal
     def save_changes(e):
         try:
             if not nombre_input.value or not categoria_input.value:
-                page.snack_bar = ft.SnackBar(ft.Text("Nombre y categoría son requeridos"))
-                page.snack_bar.open = True
+                page.show_dialog(ft.SnackBar(ft.Text("Nombre y categoría son requeridos")))
                 page.update()
                 return
             
@@ -184,14 +171,12 @@ def create_edit_producto_dialog(page: ft.Page, producto: m.Producto, on_save_cal
             m.modify(m.Producto, producto.id_producto, "cantidad", int(cantidad_input.value or 0))
             
             dialog.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"✓ Producto actualizado"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            page.show_dialog(ft.SnackBar(ft.Text(f"Producto actualizado"), bgcolor=ft.Colors.GREEN))
             page.update()
             if on_save_callback:
                 on_save_callback()
         except Exception as ex:
-            page.snack_bar = ft.SnackBar(ft.Text(f"Error: {str(ex)}"), bgcolor=ft.Colors.RED)
-            page.snack_bar.open = True
+            page.show_dialog(ft.SnackBar(ft.Text(f"Error: {str(ex)}"), bgcolor=ft.Colors.RED))
             page.update()
 
     dialog = ft.AlertDialog(
@@ -219,14 +204,12 @@ def create_delete_dialog(page: ft.Page, model_name: str, item_id: int, on_delete
                 m.soft_delete(m.Repartidor, item_id)
             
             dialog.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"✓ {model_name} eliminado"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            page.show_dialog(ft.SnackBar(ft.Text(f"✓ {model_name} eliminado"), bgcolor=ft.Colors.GREEN))
             page.update()
             if on_delete_callback:
                 on_delete_callback()
         except Exception as ex:
-            page.snack_bar = ft.SnackBar(ft.Text(f"Error: {str(ex)}"), bgcolor=ft.Colors.RED)
-            page.snack_bar.open = True
+            page.show_dialog(ft.SnackBar(ft.Text(f"Error: {str(ex)}"), bgcolor=ft.Colors.RED))
             page.update()
 
     dialog = ft.AlertDialog(
