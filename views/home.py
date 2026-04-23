@@ -1,4 +1,5 @@
 import flet as ft
+import log_view as lv
 import dashboard as d
 import products as p
 import providers as pr
@@ -7,7 +8,6 @@ import delivery as dy
 import restock as r
 import sales as s
 import simulation as sm
-import log_view as lv
 
 def home(page:ft.Page):  
     
@@ -55,7 +55,7 @@ def home(page:ft.Page):
         leading=ft.FloatingActionButton(
             icon=ft.Icons.SETTINGS,
             content="Simulación",
-            on_click=lambda e:page.add(sm.simulation_view(page)) ,
+            on_click=lambda e:page.show_dialog(sm.simulation_view(page)) ,
         ), 
         destinations=[
             ft.NavigationRailDestination(icon=ft.Icon(ft.Icons.BAR_CHART),label="Dashboard"),

@@ -11,6 +11,10 @@ class Logs:
             spacing=5
         )
         self._lock = threading.Lock()
+        self._update_callback = None
+
+    def set_update_callback(self, callback):
+        self._update_callback = callback
 
     def create_message(self, message_type: str, content: str, icon=None):
         type_config = {
@@ -42,6 +46,8 @@ class Logs:
 
         with self._lock:
             self.log_screen.controls.append(message)
+            if self._update_callback:
+                self._update_callback()
 
     def clear_logs(self):
         with self._lock:
@@ -53,12 +59,14 @@ class Logs:
 global_logger = Logs()
 
 #ejemplo
+"""
 global_logger.create_message("info", "Sistema de logs inicializado")
 global_logger.create_message("success", "Conexión a base de datos establecida")
 global_logger.create_message("warning", "Algunos repartidores no disponibles")
-
+"""
 
 def log_view(page: ft.Page):
+    global_logger.set_update_callback(page.update)
     content = ft.Column([
         ft.Text("Logs", size=24, weight=ft.FontWeight.BOLD),
         ft.Divider(),
