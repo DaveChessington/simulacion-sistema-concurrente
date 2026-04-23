@@ -14,9 +14,11 @@ import time
 def home(page:ft.Page):  
     
     current_view = [0]
+    ui_lock = threading.Lock()
     
     def sidebar_controller(e):
-        idx = e.control.selected_index
+        with ui_lock:
+            idx = e.control.selected_index
         current_view[0] = idx
         print("selected index:", idx)
         match idx:
@@ -51,11 +53,12 @@ def home(page:ft.Page):
         while True:
             time.sleep(2)
             if current_view[0] == 0:
-                content.content = d.dashboard_view(page)
-                try:
-                    content.update()
-                except Exception as ex:
-                    print("Error auto-refresh:", ex)
+                with ui_lock:
+                    content.content = d.dashboard_view(page)
+                    try:
+                        content.update()
+                    except Exception as ex:
+                        print("Error auto-refresh:", ex)
                     
     threading.Thread(target=auto_refresh, daemon=True).start()
 
