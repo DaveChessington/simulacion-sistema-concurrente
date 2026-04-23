@@ -12,24 +12,27 @@ def pagination_view(page:ft.Page, generate=cardview.card_view, elements=[i for i
     #add_button_callback is a function to call when the add button is clicked
     
     def next_pressed(e):
-        if int(current_page.value)+1>pagination["total_pages"]:
+        val = int(current_page.value) if current_page.value else 1
+        if val+1>pagination["total_pages"]:
             next_button.disabled=True
         else:
-            current_page.value=int(current_page.value)+1
+            current_page.value=val+1
             prev_button.disabled=False
         update_pagination()
 
     def prev_pressed(e):
-        if int(current_page.value)-1<1:
+        val = int(current_page.value) if current_page.value else 1
+        if val-1<1:
             prev_button.disabled=True
         else:
-            current_page.value=int(current_page.value)-1
+            current_page.value=val-1
             next_button.disabled=False
         update_pagination()
 
     def current_changed(e):
         try:
-            if not 0<int(current_page.value)<=pagination["total_pages"]:
+            val = int(current_page.value) if current_page.value else 1
+            if not 0<val<=pagination["total_pages"]:
                 current_page.value=1     
         except:
             return 
