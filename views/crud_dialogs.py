@@ -11,10 +11,10 @@ except ModuleNotFoundError:
 
 def create_producto_dialog(page: ft.Page, on_save_callback=None):
     """Diálogo para crear/editar un Producto"""
-    nombre_input = ft.TextField(label="Nombre", width=300)
-    categoria_input = ft.TextField(label="Categoría", width=300)
-    descripcion_input = ft.TextField(label="Descripción", width=300, multiline=True)
-    cantidad_input = ft.TextField(label="Cantidad", width=300, input_filter="digits")
+    nombre_input = ft.TextField(label="Nombre")
+    categoria_input = ft.TextField(label="Categoría")
+    descripcion_input = ft.TextField(label="Descripción",  multiline=True, min_lines=1, max_lines=3)
+    cantidad_input = ft.TextField(label="Cantidad",  input_filter=ft.InputFilter(allow=True, regex_string=r"\d+"))
 
     def save_producto(e):
         try:
@@ -42,8 +42,10 @@ def create_producto_dialog(page: ft.Page, on_save_callback=None):
         title=ft.Text("Nuevo Producto"),
         content=ft.Column([
             nombre_input,
+            
             categoria_input,
             descripcion_input,
+            
             cantidad_input,
         ], spacing=10, tight=True),
         actions=[

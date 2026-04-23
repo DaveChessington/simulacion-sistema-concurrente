@@ -8,12 +8,18 @@ import delivery as dy
 import restock as r
 import sales as s
 import simulation as sm
+import threading
+import time
 
 def home(page:ft.Page):  
     
+    current_view = [0]
+    
     def sidebar_controller(e):
-        print("selected index:",e.control.selected_index)
-        match e.control.selected_index:
+        idx = e.control.selected_index
+        current_view[0] = idx
+        print("selected index:", idx)
+        match idx:
             case 0:
                 content.content=d.dashboard_view(page, )          
                 topbar.title="Dashboard"
@@ -39,6 +45,19 @@ def home(page:ft.Page):
                 content.content=lv.log_view(page)
                 topbar.title="System Logs"
         page.update()
+
+    # Hilo de auto-refresco 
+    def auto_refresh():
+        while True:
+            time.sleep(2)
+            if current_view[0] == 0:
+                content.content = d.dashboard_view(page)
+                try:
+                    content.update()
+                except Exception as ex:
+                    print("Error auto-refresh:", ex)
+                    
+    threading.Thread(target=auto_refresh, daemon=True).start()
 
     topbar=ft.AppBar(
         leading=ft.IconButton(ft.Icons.MENU,on_click=lambda e:(setattr(sidebar_container,"visible",not sidebar_container.visible),print(f"sidebar visibility is now: {sidebar_container.visible}"),page.update())),
