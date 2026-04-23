@@ -25,7 +25,7 @@ def dashboard_view(page: ft.Page, elements=None, columns=None):
     # Obtener información adicional de stock
     try:
         stock_total = m.get_stock_total()
-        productos_bajo_stock = m.get_productos_bajo_stock(5)
+        productos_bajo_stock = m.get_productos_bajo_stock(20)
         productos_sin_stock = m.get_productos_sin_stock()
         movimientos = m.get_movimientos_stock_resumen()
     except Exception as e:
@@ -76,27 +76,33 @@ def dashboard_view(page: ft.Page, elements=None, columns=None):
                 )
             ),
         ], spacing=10),
-        
-        # Advertencias
-        ft.Column([
-            *([ft.Banner(
-                content=ft.Row([
-                    ft.Icon(ft.Icons.WARNING, color=ft.Colors.ORANGE),
-                    ft.Text(f"{len(productos_bajo_stock)} productos con stock bajo")
-                ], spacing=10),
-                leading=None,
-            )] if productos_bajo_stock else []),
-            *([ft.Banner(
-                content=ft.Row([
-                    ft.Icon(ft.Icons.ERROR, color=ft.Colors.RED),
-                    ft.Text(f"{len(productos_sin_stock)} productos sin stock")
-                ], spacing=10),
-                leading=None,
-            )] if productos_sin_stock else []),
-        ], spacing=5)
-    ], spacing=15)
+    ])
     
     if elements:
+        if len(productos_bajo_stock)>0:
+            banner=ft.Banner(
+                bgcolor=ft.Colors.AMBER_100,
+                leading=ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, color=ft.Colors.AMBER, size=40),
+                content=ft.Text(f"Alerta stock bajo: {f"\n".join([f"{bajo_stock['nombre']} - Stock: {bajo_stock['cantidad']}" for bajo_stock in productos_bajo_stock])}",color=ft.Colors.BLACK),
+                actions=[
+                    ft.TextButton("Refrescar", on_click=lambda e: page.update(),style=ft.ButtonStyle(color=ft.Colors.BLUE)),
+                    ft.TextButton("Cerrar", on_click=lambda e: (page.pop_dialog(), page.update()),style=ft.ButtonStyle(color=ft.Colors.RED))
+                ]
+            )
+            page.show_dialog(banner)
+
+        if len(productos_sin_stock)>0:
+            banner=ft.Banner(
+                bgcolor=ft.Colors.RED_100,
+                leading=ft.Icon(ft.Icons.ERROR, color=ft.Colors.RED),
+                content=ft.Text(f"Alerta stock agotado: {f"\n".join([f"{sin_stock['nombre']} - Stock: {sin_stock['cantidad']}" for sin_stock in productos_sin_stock])}",color=ft.Colors.BLACK),
+                actions=[
+                    ft.TextButton("Refrescar", on_click=lambda e: page.update(),style=ft.ButtonStyle(color=ft.Colors.BLUE)),
+                    ft.TextButton("Cerrar", on_click=lambda e: (page.pop_dialog(), page.update()),style=ft.ButtonStyle(color=ft.Colors.RED))
+                ]
+            )
+            page.show_dialog(banner)
+        
         chart_content = fch.BarChart(
             expand=True,
             interactive=True,

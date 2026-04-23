@@ -11,7 +11,8 @@ import simulation as sm
 import threading
 import time
 
-def home(page:ft.Page):  
+def home(page:ft.Page): 
+    page.title="Sistema de Control de Productos" 
     
     current_view = [0]
     ui_lock = threading.Lock()
@@ -21,6 +22,11 @@ def home(page:ft.Page):
             idx = e.control.selected_index
         current_view[0] = idx
         print("selected index:", idx)
+        
+        # Muestra el indicador de carga en el área central
+        content.content = ft.Container(content=ft.ProgressRing(), alignment=ft.Alignment.CENTER, expand=True)
+        page.update()
+        
         match idx:
             case 0:
                 content.content=d.dashboard_view(page, )          
@@ -60,7 +66,8 @@ def home(page:ft.Page):
                     except Exception as ex:
                         print("Error auto-refresh:", ex)
                     
-    threading.Thread(target=auto_refresh, daemon=True).start()
+    # Deshabilitado temporalmente: El auto-refresco brusco colisiona con los logs de la simulación
+    # threading.Thread(target=auto_refresh, daemon=True).start()
 
     topbar=ft.AppBar(
         leading=ft.IconButton(ft.Icons.MENU,on_click=lambda e:(setattr(sidebar_container,"visible",not sidebar_container.visible),print(f"sidebar visibility is now: {sidebar_container.visible}"),page.update())),
