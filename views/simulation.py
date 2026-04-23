@@ -12,14 +12,15 @@ _LEVEL_CONFIG = {
     "info":    {"color": ft.Colors.BLUE_600,   "icon": ft.Icons.INFO,         "label": "INFO"},
 }
 
+_is_running=False
+sim=sm.Simulation()
+
 def simulation_view(page:ft.Page):
-    _is_running=False
-    sim=sm.Simulation()
 
     global_logger.set_update_callback(page.update)
 
     def start_sim(e):
-        nonlocal sim, _is_running
+        global _is_running
 
         if not limit.value:
             sim.limit=None
@@ -35,18 +36,23 @@ def simulation_view(page:ft.Page):
         page.update()
 
         def run_sim():
+            global _is_running
             sim.start()
-            start_button.disabled = False
-            stop_button.disabled = True
-            status_text.value = "Estado: Detenida"
-            status_text.color = ft.Colors.GREY_600
-            page.update()
+            _is_running = False
+            try:
+                start_button.disabled = False
+                stop_button.disabled = True
+                status_text.value = "Estado: Detenida"
+                status_text.color = ft.Colors.GREY_600
+                page.update()
+            except Exception:
+                pass
             
         
         threading.Thread(target=run_sim, daemon=True).start()
 
     def stop_sim(e):
-        nonlocal sim,_is_running
+        global _is_running
         sim.stop()
         _is_running=False
         print("stopped")
@@ -62,6 +68,7 @@ def simulation_view(page:ft.Page):
         icon=ft.Icons.PLAY_ARROW,
         color=ft.Colors.WHITE,
         bgcolor=ft.Colors.GREEN_700,
+        disabled=_is_running,
         on_click=lambda e: start_sim(e),
     )
     stop_button = ft.Button(
@@ -69,11 +76,23 @@ def simulation_view(page:ft.Page):
         icon=ft.Icons.STOP,
         color=ft.Colors.WHITE,
         bgcolor=ft.Colors.RED_700,
-        disabled=True,
+        disabled=not _is_running,
         on_click=lambda e: stop_sim(e),
     )
-    limit=ft.TextField(label="Limite de operaciones", hint_text="Deje en blanco para ilimitado")
-    status_text = ft.Text("Estado: Detenida", size=13, color=ft.Colors.GREY_600)
+    
+    val = ""
+    if sim.limit is not None:
+        val = str(sim.limit)
+        
+    limit=ft.TextField(
+        label="Limite de operaciones", 
+        hint_text="Deje en blanco para ilimitado",
+        value=val
+    )
+    
+    status_msg = "Estado: Ejecutando…" if _is_running else "Estado: Detenida"
+    status_col = ft.Colors.GREEN_700 if _is_running else ft.Colors.GREY_600
+    status_text = ft.Text(status_msg, size=13, color=status_col)
     
     main_content = ft.AlertDialog(
         title= ft.Text("Control de Simulación", size=24, weight=ft.FontWeight.BOLD),

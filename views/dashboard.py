@@ -82,14 +82,14 @@ def dashboard_view(page: ft.Page, elements=None, columns=None):
             *([ft.Banner(
                 content=ft.Row([
                     ft.Icon(ft.Icons.WARNING, color=ft.Colors.ORANGE),
-                    ft.Text(f"⚠ {len(productos_bajo_stock)} productos con stock bajo")
+                    ft.Text(f"{len(productos_bajo_stock)} productos con stock bajo")
                 ], spacing=10),
                 leading=None,
             )] if productos_bajo_stock else []),
             *([ft.Banner(
                 content=ft.Row([
                     ft.Icon(ft.Icons.ERROR, color=ft.Colors.RED),
-                    ft.Text(f"❌ {len(productos_sin_stock)} productos sin stock")
+                    ft.Text(f"{len(productos_sin_stock)} productos sin stock")
                 ], spacing=10),
                 leading=None,
             )] if productos_sin_stock else []),
