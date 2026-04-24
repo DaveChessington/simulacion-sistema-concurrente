@@ -135,7 +135,7 @@ class Simulation:
         global_logger.create_message("info", f"Iniciando simulación del sistema (límite: {self.limit})")
         print_console_log("info", f"Iniciando simulación del sistema (límite: {self.limit})")
         i = 1
-        
+        inicio=time.perf_counter()
         while self._running and (self.limit is None or i <= self.limit):
             # Dormir en incrementos pequeños de 0.1s para poder reaccionar rápido al "Detener"
             sleep_time = random.randint(10, 30) # de 1 a 3 segundos (10 * 0.1s)
@@ -164,6 +164,10 @@ class Simulation:
         global_logger.create_message("success", f"Simulación completada - {i-1} operaciones procesadas")
         print_console_log("success", f"Simulación completada - {i-1} operaciones procesadas")
         print_console_log("info", f"procesos pendientes: {threading.enumerate()}")
+        global_logger.create_message("info", f"procesos pendientes: {threading.enumerate()}")
+        fin=time.perf_counter()
+        global_logger.create_message("info", f"Tiempo de ejecución: {fin-inicio:.2f} segundos") 
+        print_console_log("info", f"Tiempo de ejecución: {fin-inicio:.2f} segundos")
         return self
 
     def stop(self):
